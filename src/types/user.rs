@@ -102,6 +102,6 @@ pub struct User{
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Data{
-    pub data: Vec<User>, 
+pub struct UserData{
+    pub data: User, 
 }

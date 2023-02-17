@@ -1,15 +1,33 @@
-//! # User Data
+//! # Users
 //!
-//! Handles user requests and returing the user data
+//! Handles user requests and returing the user data.
+//! 
+//! What are users anyways?
+//! Users are the people on speedrun.com that have an account.
+//! This account then can submit runs and chat in fourms on the website.
+//! 
+//! Users have different data points assosiated with them:
+//! - id: The unique id given to a user at signup - *This value will always be the same*.
+//! - name: The name they have chooses to display for speedrun.com - *This value can change*.
+//! - weblink: The link to the users profile, you can input it on your browser and it will pull up the profile.
+//! - pronouns: The pronouns the person has listed on their profile - *This value can be None*.
+//! - role: The role of the user on the website.
+//! - signup: The date the user signed up for the website and created an account.
+//! - region: The region where the person lives (state, country, city, etc.).
+//! - country: The country where the person lives (continent, nation, etc.).
+//! - links: The links for the other api endpoints for some more specific data.
+//! 
+//! You can use the functions in this module to get differnt parts and peices of the data or the whole set!
 //!
 //! ## Arguments
 //!
 //! All of the functions will take in a name parameter
+//! 
 //! name: &str, the name of a person on speedrun.com
 
 //TODO! name-style!
 use crate::translate::tl_time;
-use crate::types::user::Data;
+use crate::types::user::UserData;
 use std::string::String;
 
 /// makes a request for user data 
@@ -23,26 +41,26 @@ async fn user_reqwest(name: &str) -> Result<Vec<String>, reqwest::Error> {
     //Initialize a client and send the request
     let client = reqwest::Client::new();
     let url = format!("https://www.speedrun.com/api/v1/users?lookup={:1}", name);
-    let response = client.get(url).send().await.unwrap().json::<Data>().await.unwrap();
+    // just get id from first request then get use id to get data?
+    let response = client.get(url).send().await.unwrap().json::<UserData>().await.unwrap();
     //TODO allow user ids
 
     //Create a user
     let mut user_data = Vec::<String>::new();
-    for user in response.data {
+    let user = response.data;
         //Get each of the users data points from the structs
         // TODO add the missing values that caused errors
-        let time = tl_time(&user.signup.unwrap_or(String::from("None")));
+    let time = tl_time(&user.signup.unwrap_or(String::from("None")));
         //let links = [user.twitch, &user.hitbox, &user.youtube, &user.twitch, &user.speedrunslive];
-        user_data.extend([user.id, user.names.international, user.weblink,
-            user.pronouns.unwrap_or(String::from("None")), user.role, time,
-            user.location.region.code, user.location.region.names.international,
-            user.location.country.code, user.location.country.names.international,
-            user.twitch.map(|link| link.uri).unwrap_or(String::from("None")),
-            user.hitbox.map(|link| link.uri).unwrap_or(String::from("None")),
-            user.youtube.map(|link| link.uri).unwrap_or(String::from("None")),
-            user.twitter.map(|link| link.uri).unwrap_or(String::from("None")),
-            user.speedrunslive.map(|link| link.uri).unwrap_or(String::from("None"))]);
-    }
+    user_data.extend([user.id, user.names.international, user.weblink,
+        user.pronouns.unwrap_or(String::from("None")), user.role, time,
+        user.location.region.code, user.location.region.names.international,
+        user.location.country.code, user.location.country.names.international,
+        user.twitch.map(|link| link.uri).unwrap_or(String::from("None")),
+        user.hitbox.map(|link| link.uri).unwrap_or(String::from("None")),
+        user.youtube.map(|link| link.uri).unwrap_or(String::from("None")),
+        user.twitter.map(|link| link.uri).unwrap_or(String::from("None")),
+        user.speedrunslive.map(|link| link.uri).unwrap_or(String::from("None"))]);
     Ok(user_data)
 }
 

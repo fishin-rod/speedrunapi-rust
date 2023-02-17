@@ -4,7 +4,7 @@
 
 use tokio::runtime::Runtime;
 use chrono::prelude::*;
-use crate::types::user::Data;
+use crate::types::user::UserData;
 
 /// This function helps with translating time
 /// 
@@ -55,10 +55,7 @@ pub fn username_to_id(username: &str) -> String {
 async fn async_username_to_id(username: &str) -> String{
     let client = reqwest::Client::new();
     let url = format!("https://www.speedrun.com/api/v1/users?lookup={:1}", username);
-    let response = client.get(url).send().await.unwrap().json::<Data>().await.unwrap();
+    let response = client.get(url).send().await.unwrap().json::<UserData>().await.unwrap();
 
-    for user in response.data{
-       return user.id;
-    }
-    return ("User ID not found!").to_string();
+    return response.data.id;
 }

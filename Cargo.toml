@@ -1,11 +1,11 @@
 [package]
 name = "speedrunapi"
-version = "0.1.0"
+version = "0.1.1"
 description = "REST API wrapper for speedrun.com's API in rust!"
 license = "MIT"
-# homepage = 
-# documentation = 
-# repository = 
+homepage = "https://crates.io/crates/speedrunapi"
+documentation = "https://docs.rs/crate/speedrunapi/latest"
+repository = "https://github.com/fishin-rod/speedrunapi-rust"
 authors = ["Fish"]
 readme = "README.md"
 edition = "2021"
@@ -19,5 +19,7 @@ path = "src/lib.rs"
 [dependencies]
 reqwest = { version = "0.11", features = ["json"] }
 tokio = { version = "1", features = ["full"] }
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0.64", features = ["derive"] }
+serde_json = "1.0.93"
+serde_path_to_error = "0.1"
 chrono = "0.4.23"
