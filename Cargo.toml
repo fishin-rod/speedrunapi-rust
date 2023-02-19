@@ -1,6 +1,6 @@
 [package]
 name = "speedrunapi"
-version = "0.1.1"
+version = "0.1.2"
 description = "REST API wrapper for speedrun.com's API in rust!"
 license = "MIT"
 homepage = "https://crates.io/crates/speedrunapi"

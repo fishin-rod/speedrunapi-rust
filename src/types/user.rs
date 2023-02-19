@@ -1,107 +1,93 @@
-//! # User_types
-//! 
-//! Contains all of the JSON values for a user
-//! 
-//! Struct DATA is the main struct containing a vector of all the other data points.
-//! Struct User is the struct that starts holding the values, and it then expands from there on the values 
+use serde::{Deserialize};
 
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct UserNames{
-    pub international: String,
-    pub japanese: Option<String>,
+#[derive(Deserialize, Debug)]
+pub struct User {
+    pub(crate) id: String,
+    pub(crate) names: Names,
+    #[serde(rename = "supporterAnimation")]
+    pub(crate) supporter_animation: bool,
+    pub(crate) pronouns: Option<String>,
+    pub(crate) weblink: String,
+    //#[serde(rename = "name-style")]
+    //pub(crate) name_style: NameStyle,
+    pub(crate) role: String,
+    pub(crate) signup: Option<String>,
+    pub(crate) location: Location,
+    pub(crate) twitch: Option<String>,
+    pub(crate) hitbox: Option<String>,
+    pub(crate) youtube: Option<String>,
+    pub(crate) twitter: Option<String>,
+    pub(crate) speedrunslive: Option<String>,
+    pub(crate) assets: Assets,
+    pub(crate) links: Vec<Link>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct NameColor{
-    pub light: String,
-    pub dark: String
+#[derive(Deserialize, Debug)]
+pub struct Names {
+    pub(crate) international: String,
+    pub(crate) japanese: Option<String>,
+}
+/* 
+#[derive(Deserialize, Debug)]
+
+pub struct NameStyle {
+    pub(crate) style: String,
+    pub(crate) color: Color,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct NameStyle{
-    pub style: String,
-    pub color: NameColor,
+#[derive(Deserialize, Debug)]
+pub struct Color {
+    pub(crate) light: String,
+    pub(crate) dark: String,
+}
+*/
+#[derive(Deserialize, Debug)]
+pub struct Location {
+    pub(crate) country: Country,
+    pub(crate) region: Option<Region>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct LocationNames{
-    pub international: String,
-    pub japanese: Option<String>,
+#[derive(Deserialize, Debug)]
+pub struct Country {
+    pub(crate) code: String,
+    pub(crate) names: Names,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Country{
-    pub code: String,
-    pub names: LocationNames,
+#[derive(Deserialize, Debug)]
+pub struct Region {
+    pub(crate) code: String,
+    pub(crate) names: Names,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct RegionNames{
-    pub international: String,
-    pub japanese: Option<String>,
+#[derive(Deserialize, Debug)]
+pub struct Assets {
+    pub(crate) icon: Icon,
+    #[serde(rename = "supporterIcon")]
+    pub(crate) supporter_icon: Option<Icon>,
+    pub(crate) image: Icon,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Region{
-    pub code: String,
-    pub names: RegionNames
+#[derive(Deserialize, Debug)]
+pub struct Icon {
+    pub(crate) uri: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Location{
-    pub country: Country,
-    pub region: Region,
+#[derive(Deserialize, Debug)]
+pub struct Link {
+    pub(crate) rel: String,
+    pub(crate) uri: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Twitch{
-    pub uri: Option<String>,
+#[derive(Deserialize, Debug)]
+pub struct UserData {
+    pub(crate) data: Vec<User>,
+   // pub(crate) pagination: Pagination,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Hitbox{
-    pub uri: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Youtube{
-    pub uri: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Twitter{
-    pub uri: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct SpeedRunsLive{
-    pub uri: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Link{
-    pub uri: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct User{
-    pub id: String,
-    pub names: UserNames,
-    pub weblink: String,
-    pub pronouns: Option<String>,
-    pub role: String,
-    pub signup: Option<String>,
-    pub location: Location,
-    pub twitch: Option<Link>,
-    pub hitbox: Option<Link>,
-    pub youtube: Option<Link>,
-    pub twitter: Option<Link>,
-    pub speedrunslive: Option<Link>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct UserData{
-    pub data: User, 
-}
+//#[derive(Deserialize, Debug)]
+//pub struct Pagination {
+  //  pub(crate) offset: u32,
+  //  pub(crate) max: u32,
+  //  pub(crate) size: u32,
+  //  pub(crate) links: Vec<Link>,
+//}

@@ -2,7 +2,7 @@
 //! 
 //! This file is for the translations and conversions of certin items for working with the library
 
-use tokio::runtime::Runtime;
+use tokio;
 use chrono::prelude::*;
 use crate::types::user::UserData;
 
@@ -48,14 +48,20 @@ pub fn tl_time(signup: &str) -> String{
 /// ```
 
 pub fn username_to_id(username: &str) -> String {
-    let rt = Runtime::new().unwrap();
-    rt.block_on(async_username_to_id(username)).to_string()
+    let user_id = tokio::runtime::Runtime::new().unwrap().block_on(async_username_to_id(username)).unwrap();
+    return user_id;
 }
 
-async fn async_username_to_id(username: &str) -> String{
+async fn async_username_to_id(username: &str) -> Result<String, Box<dyn std::error::Error>>{
     let client = reqwest::Client::new();
     let url = format!("https://www.speedrun.com/api/v1/users?lookup={:1}", username);
-    let response = client.get(url).send().await.unwrap().json::<UserData>().await.unwrap();
-
-    return response.data.id;
+    let response = client.get(url).send().await.unwrap().text().await.unwrap();
+    let userid: UserData = serde_json::from_str(&response)?;
+    let mut user_id = Vec::<String>::new();
+    for user in userid.data{
+        user_id.push(user.id);
+    }
+    Ok(user_id[0].to_string())
 }
+
+// user_id_to_name 

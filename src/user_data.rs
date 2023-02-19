@@ -37,30 +37,36 @@ use std::string::String;
 ///
 /// I recommend using the id of the user since a person can change their name
 #[tokio::main]
-async fn user_reqwest(name: &str) -> Result<Vec<String>, reqwest::Error> {
+async fn user_reqwest(name: &str) -> Result<Vec<String>, Box<dyn std::error::Error>>{
     //Initialize a client and send the request
     let client = reqwest::Client::new();
     let url = format!("https://www.speedrun.com/api/v1/users?lookup={:1}", name);
-    // just get id from first request then get use id to get data?
-    let response = client.get(url).send().await.unwrap().json::<UserData>().await.unwrap();
+    let response = client.get(url).send().await.unwrap().text().await.unwrap();
+    let userdata: UserData = serde_json::from_str(&response)?;
     //TODO allow user ids
+    //TODO allow name-style
 
     //Create a user
     let mut user_data = Vec::<String>::new();
-    let user = response.data;
+    for user in userdata.data{  
         //Get each of the users data points from the structs
-        // TODO add the missing values that caused errors
-    let time = tl_time(&user.signup.unwrap_or(String::from("None")));
+        let time = tl_time(&user.signup.unwrap_or(String::from("None")));
         //let links = [user.twitch, &user.hitbox, &user.youtube, &user.twitch, &user.speedrunslive];
-    user_data.extend([user.id, user.names.international, user.weblink,
-        user.pronouns.unwrap_or(String::from("None")), user.role, time,
-        user.location.region.code, user.location.region.names.international,
-        user.location.country.code, user.location.country.names.international,
-        user.twitch.map(|link| link.uri).unwrap_or(String::from("None")),
-        user.hitbox.map(|link| link.uri).unwrap_or(String::from("None")),
-        user.youtube.map(|link| link.uri).unwrap_or(String::from("None")),
-        user.twitter.map(|link| link.uri).unwrap_or(String::from("None")),
-        user.speedrunslive.map(|link| link.uri).unwrap_or(String::from("None"))]);
+    user_data.extend([user.id, user.names.international, user.names.japanese.unwrap_or(String::from("None")),
+        user.supporter_animation.to_string(), user.weblink, user.pronouns.unwrap_or(String::from("None")), user.role, time,
+        user.location.region.as_ref().map(|code| code.code.clone()).unwrap_or(String::from("None")), 
+        user.location.region.as_ref().map(|name| name.names.international.clone()).unwrap_or(String::from("None")), user.location.country.code, 
+        user.location.country.names.international, user.twitch.unwrap_or(String::from("None")),
+        user.hitbox.unwrap_or(String::from("None")), user.youtube.unwrap_or(String::from("None")),
+        user.twitter.unwrap_or(String::from("None")), user.speedrunslive.unwrap_or(String::from("None")), 
+        user.assets.icon.uri.unwrap_or(String::from("None")), user.assets.supporter_icon.map(|icon| icon.uri).flatten().unwrap_or(String::from("None")),
+        user.assets.image.uri.unwrap_or(String::from("None"))]);
+        let rels: Vec<String> = user.links.iter().map(|rel| rel.rel.clone()).collect();
+        let urls: Vec<String> = user.links.iter().map(|link| link.uri.clone()).collect();
+        user_data.extend(rels);
+        user_data.extend(urls);
+    }
+    
     Ok(user_data)
 }
 
@@ -81,7 +87,6 @@ pub fn user_data(name: &str) -> Vec<String> {
 
 /// Returns the ID of the user
 ///
-///
 /// ## Returns
 ///
 /// The id of the user as a string
@@ -99,6 +104,24 @@ pub fn user_id(name: &str) -> std::string::String {
     return user_id.to_string();
 }
 
+/// Returns if the user has a supporter animation on their profile
+/// 
+/// ## Returns
+/// 
+/// A boolen value. 
+/// The value is true if the user has a suppoter animation, otehrwise its false.
+/// 
+/// ## Examples
+/// ```rust
+/// use speedrunapi::user_animation;
+/// let result = user_animation("fishin_rod");
+/// assert_eq!(result, false);
+/// ```
+pub fn user_animation(name: &str) -> bool{
+    let user_animation = &main(name.to_string())[3];
+    return user_animation.parse::<bool>().unwrap();
+}
+
 /// Returns the speedrun.com link to a users profile
 ///
 /// ## Returns
@@ -114,7 +137,7 @@ pub fn user_id(name: &str) -> std::string::String {
 /// ```
 
 pub fn user_link(name: &str) -> std::string::String {
-    let user_link = &main(name.to_string())[2];
+    let user_link = &main(name.to_string())[4];
     return user_link.to_string();
 }
 
@@ -135,7 +158,7 @@ pub fn user_link(name: &str) -> std::string::String {
 /// ```
 
 pub fn user_pronouns(name: &str) -> std::string::String {
-    let user_pronoun = &main(name.to_string())[3];
+    let user_pronoun = &main(name.to_string())[5];
     return user_pronoun.to_string();
 }
 
@@ -155,7 +178,7 @@ pub fn user_pronouns(name: &str) -> std::string::String {
 /// ```
 
 pub fn user_role(name: &str) -> std::string::String {
-    let user_role = &main(name.to_string())[4];
+    let user_role = &main(name.to_string())[6];
     return user_role.to_string();
 }
 
@@ -175,7 +198,7 @@ pub fn user_role(name: &str) -> std::string::String {
 /// ```
 
 pub fn user_signup(name: &str) -> std::string::String {
-    let user_time = &main(name.to_string())[5];
+    let user_time = &main(name.to_string())[7];
     return user_time.to_string();
 }
 
@@ -193,7 +216,7 @@ pub fn user_signup(name: &str) -> std::string::String {
 /// ```
 
 pub fn user_region(name: &str) -> std::string::String{
-    let user_region_name = &main(name.to_string())[7];
+    let user_region_name = &main(name.to_string())[9];
     return user_region_name.to_string();
 }
 
@@ -211,8 +234,30 @@ pub fn user_region(name: &str) -> std::string::String{
 /// ```
 
 pub fn user_country(name: &str) -> std::string::String{
-    let user_country_name = &main(name.to_string())[9];
+    let user_country_name = &main(name.to_string())[11];
     return user_country_name.to_string();
+}
+
+/// Returns the assests the users has
+/// 
+/// ## Returns
+/// 
+/// A vetor contaning 3 strings repersenting differnt assests a user can have.
+/// The first is the uri to the icon they have set for their profile, 
+/// the next is the supporter icon the uri to the supporter icon they have (if they dont have one returns None),
+/// the last is the image they have set.
+/// 
+/// ## Examples
+/// ```rust
+/// use speedrunapi::user_assets;
+/// let result = user_assets("fishin_rod");
+/// assert_eq!(result, ["None", "None", "None"])
+/// ```
+pub fn user_assets(name: &str) -> Vec<String>{
+    let data = &main(name.to_string());
+    let assets = vec![&data[12], &data[13], &data[14]];
+    let strings: Vec<String> = assets.iter().map(|s| s.to_string()).collect();
+    return strings.to_vec();
 }
 
 /// Returns the links listed on a users profile
@@ -232,7 +277,7 @@ pub fn user_country(name: &str) -> std::string::String{
 
 pub fn user_links(name: &str) -> Vec<String>{
     let data = &main(name.to_string());
-    let profile_links = vec![&data[10], &data[11], &data[12], &data[13], &data[14]];
+    let profile_links = vec![&data[15], &data[16], &data[17], &data[18], &data[19]];
     let strings: Vec<String> = profile_links.iter().map(|s| s.to_string()).collect();
     return strings.to_vec();
 }
