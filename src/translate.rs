@@ -63,5 +63,36 @@ async fn async_username_to_id(username: &str) -> Result<String, Box<dyn std::err
     }
     Ok(user_id[0].to_string())
 }
+/* 
+/// Translates a user id to a name
+/// 
+/// ## Arguments
+/// 
+/// id: &str, the id of the user you want a name for
+/// 
+/// ## Returns the name of the user from the id as a string
+/// 
+/// ## Examples
+/// ```rust
+/// use speedrunapi::translate::user_id_to_name;
+/// let result = user_id_to_name("jonryvl8");
+/// assert_eq!(result, "fishin_rod");
+/// ```
 
-// user_id_to_name 
+pub fn user_id_to_name(username: &str) -> String{
+    let user_name = tokio::runtime::Runtime::new().unwrap().block_on(async_id_to_username(username)).unwrap();
+    return user_name[0].to_string();
+}
+
+async fn async_id_to_username(id: &str) -> Result<Vec<String>, Box<dyn std::error::Error>>{
+    let client = reqwest::Client::new();
+    let url = format!("https://www.speedrun.com/api/v1/users/{:1}", id);
+    let response = client.get(url).send().await.unwrap().text().await.unwrap();
+    let username: UserData = serde_json::from_str(&response)?;
+    let mut user_name = Vec::<String>::new();
+    for user in username.data{
+        user_name.push(user.names.international);
+    }
+    Ok(user_name)
+}
+*/

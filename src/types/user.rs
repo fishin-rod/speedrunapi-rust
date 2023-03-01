@@ -80,7 +80,7 @@ pub struct Link {
 
 #[derive(Deserialize, Debug)]
 pub struct UserData {
-    pub(crate) data: Vec<User>,
+    pub(crate) data: Vec<User>
    // pub(crate) pagination: Pagination,
 }
 

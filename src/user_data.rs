@@ -48,7 +48,7 @@ async fn user_reqwest(name: &str) -> Result<Vec<String>, Box<dyn std::error::Err
 
     //Create a user
     let mut user_data = Vec::<String>::new();
-    for user in userdata.data{  
+    for user in userdata.data{
         //Get each of the users data points from the structs
         let time = tl_time(&user.signup.unwrap_or(String::from("None")));
         //let links = [user.twitch, &user.hitbox, &user.youtube, &user.twitch, &user.speedrunslive];
@@ -64,9 +64,8 @@ async fn user_reqwest(name: &str) -> Result<Vec<String>, Box<dyn std::error::Err
         let rels: Vec<String> = user.links.iter().map(|rel| rel.rel.clone()).collect();
         let urls: Vec<String> = user.links.iter().map(|link| link.uri.clone()).collect();
         user_data.extend(rels);
-        user_data.extend(urls);
+        user_data.extend(urls); 
     }
-    
     Ok(user_data)
 }
 
@@ -82,7 +81,7 @@ async fn user_reqwest(name: &str) -> Result<Vec<String>, Box<dyn std::error::Err
 ///
 /// ex(id, name, weblink, pronouns, role, signup, region_code, region_name, country_code, country_name )
 pub fn user_data(name: &str) -> Vec<String> {
-    return main(name.to_string());
+    main(name.to_string())
 }
 
 /// Returns the ID of the user

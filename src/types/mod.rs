@@ -11,5 +11,8 @@ pub use user::UserData;
 pub mod guest;
 pub use guest::GuestData;
 
+pub mod game;
+pub use game::GameData;
+
 pub mod gametype;
 pub use gametype::GameTypeData;

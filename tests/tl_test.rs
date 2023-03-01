@@ -11,3 +11,10 @@ fn name(){
     let result = username_to_id("fishin_rod");
     assert_eq!(result, "jonryvl8");
 }
+/* 
+#[test]
+fn id(){
+    let result = user_id_to_name("jonryvl8");
+    assert_eq!(result, "fishin_rod");
+}
+*/

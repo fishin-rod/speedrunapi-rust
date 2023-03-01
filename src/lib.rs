@@ -14,9 +14,10 @@
 //! 
 //! - [User Data](#user-data)
 //! - [Guest Data](#guest-data)
+//! - [Game Data](#game-data)
 //! - [Game Types](#game-types)
 //! 
-//! ## User Data
+//! # User Data
 //! This module provides data about users on speedrun.com.
 //! 
 //! Users have lots of data points connected to them. 
@@ -32,14 +33,31 @@
 //! assert_eq!(result, "user");
 //! ```
 //! 
-//! ## Game Data
+//! # Guest Data
 //! This module provides data about guests on speedrun.com
 //! 
 //! Guests are how speedrun.com deals with users who havent made an account / arn't logged on to their account.
 //! 
 //! Guests only have a name and a link connected to them.
 //! 
-//! ## Game Types
+//! # Game Data
+//! This module provides data about games on speedrun.com
+//! 
+//! Games are places on speedrun.com where users can submit runs for.
+//! 
+//! Games have many data points connected to them.
+//! There are a few more data points that go with a game, but require a new module to be used (in progress).
+//! 
+//! **Example:**
+//! 
+//! This examples shows the fetching of the weblink of a game.
+//! ```rust
+//! use speedrunapi::game_weblink;
+//! let result = game_weblink("Mc");
+//! assert_eq!(result, "https://www.speedrun.com/mc");
+//! ```
+//! 
+//! # Game Types
 //! This module provides data on game types.
 //! 
 //! What is a gametype?
@@ -52,15 +70,19 @@
 //! 
 //! *This crate is licensed under the MIT license
 
+#[cfg_attr(docsrs, doc(cfg(feature = "speedrunapi")))]
 pub mod user_data;
 pub use user_data::{user_data, user_id, user_animation, user_link, user_pronouns, user_role, user_signup, user_region, user_country, user_assets, user_links};
 
 pub mod guest_data;
 pub use guest_data::{guest_data};
 
+pub mod game_data;
+pub use game_data::{game_data, game_id, game_boosts, game_abbreviation, game_weblink, game_discord, game_release_date, game_ruleset, game_creation, game_assets};
+
 pub mod gametypes;
 pub use gametypes::{gametype_data, gametype_name, gametype_id};
 
 pub mod translate;
 
-pub mod types;
+pub(crate) mod types;
