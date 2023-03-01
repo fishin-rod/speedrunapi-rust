@@ -8,8 +8,11 @@ documentation = "https://docs.rs/crate/speedrunapi/latest"
 repository = "https://github.com/fishin-rod/speedrunapi-rust"
 authors = ["Fish"]
 readme = "README.md"
+keywords = ["API", "speedrun"]
+# do categories
 edition = "2021"
 
+# features
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
@@ -21,5 +24,4 @@ reqwest = { version = "0.11", features = ["json"] }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0.64", features = ["derive"] }
 serde_json = "1.0.93"
-serde_path_to_error = "0.1"
 chrono = "0.4.23"
