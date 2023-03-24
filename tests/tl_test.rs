@@ -1,20 +1,8 @@
-use speedrunapi::translate::{tl_time, username_to_id};
+use speedrunapi::{tl_time};
 
 #[test]
 fn time(){
-    let result = tl_time("2014-10-02T12:34:23Z");
+    let result = tl_time!("2014-10-02T12:34:23Z");
     assert_eq!(result, "2014-10-02 12:34:23");
+    println!("{}", result);
 }
-
-#[test]
-fn name(){
-    let result = username_to_id("fishin_rod");
-    assert_eq!(result, "jonryvl8");
-}
-/* 
-#[test]
-fn id(){
-    let result = user_id_to_name("jonryvl8");
-    assert_eq!(result, "fishin_rod");
-}
-*/

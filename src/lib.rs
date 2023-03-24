@@ -16,6 +16,7 @@
 //! - [Guest Data](#guest-data)
 //! - [Game Data](#game-data)
 //! - [Game Types](#game-types)
+//! - [Level Data](#level-data)
 //! 
 //! # User Data
 //! This module provides data about users on speedrun.com.
@@ -28,9 +29,9 @@
 //! 
 //! I am using user: Bobertness as an example here, to show off roles. **This is a real user!**
 //! ```rust
-//! use speedrunapi::user_role;
-//! let result = user_role("Bobertness");
-//! assert_eq!(result, "user");
+//! use speedrunapi::UserData;
+//! let result = UserData::new("Bobertness").run();
+//! assert_eq!(result.role(), "user");
 //! ```
 //! 
 //! # Guest Data
@@ -52,9 +53,9 @@
 //! 
 //! This examples shows the fetching of the weblink of a game.
 //! ```rust
-//! use speedrunapi::game_weblink;
-//! let result = game_weblink("Mc");
-//! assert_eq!(result, "https://www.speedrun.com/mc");
+//! use speedrunapi::GameData;
+//! let result = GameData::new("MC").run();
+//! assert_eq!(result.weblink(), "https://www.speedrun.com/mc");
 //! ```
 //! 
 //! # Game Types
@@ -66,23 +67,29 @@
 //! 
 //! Game types only have a name, an id, and links attached to them.
 //! 
+//! # Levels
+//! 
 //! ---
 //! 
 //! *This crate is licensed under the MIT license
 
 #[cfg_attr(docsrs, doc(cfg(feature = "speedrunapi")))]
 pub mod user_data;
-pub use user_data::{user_data, user_id, user_animation, user_link, user_pronouns, user_role, user_signup, user_region, user_country, user_assets, user_links};
+pub use user_data::UserData;
 
 pub mod guest_data;
 pub use guest_data::{guest_data};
 
 pub mod game_data;
-pub use game_data::{game_data, game_id, game_boosts, game_abbreviation, game_weblink, game_discord, game_release_date, game_ruleset, game_creation, game_assets};
+pub use game_data::GameData;
 
-pub mod gametypes;
-pub use gametypes::{gametype_data, gametype_name, gametype_id};
+pub mod gametype_data;
+pub use gametype_data::GameTypeData;
 
+pub mod level_data;
+pub use level_data::LevelData;
+
+#[cfg(feature = "translations")]
 pub mod translate;
 
 pub(crate) mod types;

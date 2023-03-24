@@ -2,283 +2,407 @@
 //! 
 //! Handles requests for a games data
 //! 
+//! What is a game?
 //! A game is where users can submit runs for different categories and leaderboards connected to the game.
 //! 
-//! ## Arguments
-//! 
-//! All of the functons take the argument game
-//! 
-//! game: &str, the name of the game you are trying to serach for data about
 
-use crate::types::{GameData, game::GameAssetUri};
-use crate::translate::{tl_time};
-//use crate::translate::user_id_to_name;
-// Get working ^
+use crate::types::GameData as Data;
+use crate::tl_time;
 
-#[tokio::main]
-async fn game_reqwest(game: &str) -> Result<Vec<String>, Box<dyn std::error::Error>>{
-    let client = reqwest::Client::new();
-    // TODO: Game ids
-    let url = format!("https://www.speedrun.com/api/v1/games/{:1}", game);
-    let response = client.get(url).send().await.unwrap().text().await?;
-    let gamedata: GameData = serde_json::from_str(&response).unwrap();
+#[derive(Debug)]
+pub struct GameData{
+    pub name: String,
+    categories: bool,
+    levels: bool,
+    variables: bool,
+    derived_games: bool,
+    records: bool,
+}
 
-    let mut game_data = Vec::<String>::new();
-    let mut mod_list = Vec::<String>::new();
-    let game = gamedata.data;
-    //translations for things like this 
-    for moderator in game.moderators{
-        mod_list.extend([moderator.0.to_string(), 
-        moderator.1.to_string().trim_matches(|c| c == '\\' || c == '"').to_string()]);
+#[derive(Debug)]
+pub enum GameResult {
+    Game(Data),
+    None,
+    Error(GameError),
+}
+
+#[derive(Debug)]
+pub enum GameError {
+    GameNotFound,
+    InvalidArguments,
+    ReqwestError(reqwest::Error),
+}
+
+/// Generates a function that gets a datype from the result.
+macro_rules! Generate_Function {
+    ($doc:expr, $name:ident, $($field:tt).+, $datatype:ty $(, $args:ident($($extra_args:tt)*))?) => {
+        #[doc = $doc]
+        pub fn $name(&self) -> $datatype {
+            if let GameResult::Game(game_data) = self {
+                let value = game_data.data.$($field).+.clone();
+                $(let value = value.clone().$args($($extra_args)*);)?
+                value
+            } else {
+                panic!("Cannot get data from: {:?}", self);
+            }
+        }
+    };
+}
+
+impl GameResult{
+
+   // Generate_Function!("Test", abbreviations, names.international, String);
+   // Generate_Function!("## test2 ", data, platforms, Vec<String>, unwrap_or(vec!["None".to_string()]));
+
+    Generate_Function!("Returns the name of the game \n ## Returns:  \n The name of the game in english as a string \n ## Example: \n
+    use speedrunapi::GameData;
+    let result = GameData::new(\"Mc\").run();
+    assert_eq!(result.name(), \"Minecraft: Java Edition\")", name, names.international, String);
+
+    Generate_Function!("Returns the japanese name of the game \n ## Returns: \n The name of the game in japanese as a string \n #### Notes:
+    \n The japanese name may be \"None\" \n ## Example: \n
+    use speedrunapi::GameData;
+    let result = GameData::new(\"Mc\").run();
+    assert_eq!(result.japanese_name(), \"None\")", japanese_name, names.japanese, String, unwrap_or(String::from("None")));
+
+    Generate_Function!("Returns the twitch name of the game \n ## Returns: \n The twitch name of the game as a String \n ## Example: \n
+    use speedrunapi::GameData;
+    let result = GameData::new(\"Mc\").run();
+    assert_eq!(result.twitch_name(), \"Minecraft\")", twitch_name, names.twitch, String);
+
+    Generate_Function!("Returns the ID of the game \n ## Returns: \n The ID of the game as a String \n ## Example: \n
+    use speedrunapi::GameData;
+    let result = GameData::new(\"Mc\").run();
+    assert_eq!(result.id(), \"j1npme6p\")", id, id, String);
+
+    Generate_Function!("Returns the number of boosts a game has received \n ## Returns: \n The number of boosts a game has recived as an i32 \n ## Example:
+    use speedrunapi::GameData;
+    let result = GameData::new(\"Mc\").run();
+    assert_eq!(result.boosts(), 0);", boosts, boosts_received, i32, unwrap_or(i32::from(0)));
+
+    Generate_Function!("Returns the number of unique players who have boosted a game \n ## Returns: \n The number of uniqe players who have boosted a game as an i32 \n ## Example:
+    use speedrunapi::GameData;
+    let result = GameData::new(\"Mc\").run();
+    assert_eq!(result.boosters(), 0);", boosters, boost_distinct_donors, i32, unwrap_or(i32::from(0)));
+
+    Generate_Function!("Returns the abbreviation of a game \n ## Returns: \n The abbreviation of a game as a string \n ## Example: \n
+    use speedrunapi::GameData;
+    let result = GameData::new(\"Mc\").run();
+    assert_eq!(result.abbreviation(), \"mc\")", abbreviation, abbreviation, String);
+
+    Generate_Function!("Returns the weblink of a game \n ## Returns: \n The weblink of a game as a string \n ## Example: \n
+    use speedrunapi::GameData;
+    let result = GameData::new(\"Mc\").run();
+    assert_eq!(result.weblink(), \"https://www.speedrun.com/mc\")", weblink, weblink, String);
+
+    Generate_Function!("Returns the game discord \n ## Returns: \n The discord of a game as a string \n ## Example: \n
+    use speedrunapi::GameData;
+    let result = GameData::new(\"Mc\").run();
+    assert_eq!(result.discord(), \"https://discord.gg/jmdFn3C\")", discord , discord, String);
+
+    Generate_Function!("Returns the date the game was released \n ## Returns: \n The year the game was released as a i16 \n ## Example: \n
+    use speedrunapi::GameData;
+    let result = GameData::new(\"Mc\").run();
+    assert_eq!(result.released(), 2011)", released, released, i16);
+
+    Generate_Function!("Returns the date the game was released \n ## Returns: \n the date the game was released as a string \n Note:
+    This function is similar to the released function it is just newer and more specific, so some games have yet to migrate or set it so it can be \"None\" \n ## Example: \n
+    use speedrunapi::GameData;
+    let result = GameData::new(\"Mc\").run();
+    assert_eq!(result.release_date(), \"None\")", release_date, release_date, String, unwrap_or(String::from("None")));
+
+    /*
+    // Figure out how to be able to return multiple values
+    pub fn ruleset(&self, rule: String) {
+        if let GameResult::Game(game_data) = self {
+            match rule.to_lowercase().as_str(){
+
+            }
+        }
+        else{
+            panic!("Cannot get ruleset from: {:?}", self);
+        }
     }
-    game_data.extend([game.id, game.names.international, game.names.japanese.unwrap_or(String::from("None")), 
-    game.names.twitch, game.boost_received.unwrap_or(0).to_string(), game.boost_distinct_donors.unwrap_or(0).to_string(), 
-    game.abbreviation, game.weblink, game.discord, game.released.to_string(), game.release_date.unwrap_or(String::from("None")),
-    game.ruleset.show_milliseconds.to_string(), game.ruleset.require_verification.to_string(),
-    game.ruleset.require_video.to_string()]);
-    game_data.extend([game.ruleset.default_time, game.ruleset.emulators_allowed.to_string(), game.romhack.to_string()]);
-    //better way and translations
-    // Add items of ? size
-    /* 
-    game_data.append(&mut game.gametypes.unwrap_or(vec![String::from("None")]));
-    game_data.append(&mut game.platforms.unwrap_or(vec![String::from("None")]));
-    game_data.append(&mut game.regions.unwrap_or(vec![String::from("None")]));
-    game_data.append(&mut game.genres.unwrap_or(vec![String::from("None")]));
-    game_data.append(&mut game.engines.unwrap_or(vec![String::from("None")]));
-    game_data.append(&mut game.developers.unwrap_or(vec![String::from("None")]));
-    game_data.append(&mut game.publishers.unwrap_or(vec![String::from("None")]));
-    game_data.append(&mut mod_list);
     */
-    game_data.extend([game.created, game.assets.logo.uri.unwrap_or(String::from("None")), 
-    game.assets.cover_tiny.uri.unwrap_or(String::from("None")), game.assets.cover_small.uri.unwrap_or(String::from("None")), 
-    game.assets.cover_medium.uri.unwrap_or(String::from("None")), game.assets.cover_large.uri.unwrap_or(String::from("None")),
-    game.assets.trophy_1st.uri.unwrap_or(String::from("None")), game.assets.trophy_2nd.uri.unwrap_or(String::from("None")),
-    game.assets.trophy_3rd.uri.unwrap_or(String::from("None")), 
-    game.assets.trophy_4th.iter().map(|uri: &GameAssetUri| uri.uri.clone()).flatten().collect::<String>(),
-    game.assets.background.uri.unwrap_or(String::from("None")), 
-    game.assets.foreground.iter().map(|uri: &GameAssetUri| uri.uri.clone()).flatten().collect::<String>()]);
-    game_data.append(&mut game.links.iter().map(|rel| rel.rel.clone()).collect());
-    game_data.append(&mut game.links.iter().map(|uri| uri.uri.clone()).collect());
+
+    Generate_Function!("Returns if the game has romhacks \n ## Returns: \n If the game has romhacks as a bool 
+    \n Note: Use gametypes for more information \n ## Example: \n
+    use speedrunapi::GameData;
+    let result = GameData::new(\"Mc\").run();
+    assert_eq!(result.romhack(), false)", romhack, romhack, bool);
+
+    Generate_Function!("Returns the gametypes for a game \n ## Returns: \n The game types of a game in a vec of strings 
+    \n If there is none listed defults to \\[\"None\"\\] or \\[\\] \n ## Example: \n
+    use speedrunapi::GameData;
+    let result: Vec<String> = GameData::new(\"Mc\").run().gametypes();
+    assert_eq!(result, Vec::<String>::new())", gametypes, gametypes, Vec<String>, unwrap_or(vec!["None".to_string()]));
+
+    Generate_Function!("Returns the platforms of a game \n ## Returns: \n the platforms of a game in a vec of strings
+    \n If there is none listed defults to \\[\"None\"\\] or \\[\\] \n ## Example: \n
+    use speedrunapi::GameData;
+    let result: Vec<String>  = GameData::new(\"Mc\").run().platforms();
+    assert_eq!(result, [\"8gej2n93\"])", platforms, platforms, Vec<String>, unwrap_or(vec!["None".to_string()]));
+
+    Generate_Function!("Returns the regions of a game \n ## Returns: \n the regions of a game as a Vec<String>
+    \n If there is none listed defults to \\[\"None\"\\] or \\[\\] \n ## Example: \n
+    use speedrunapi::GameData;
+    let result: Vec<String> = GameData::new(\"Mc\").run().regions();
+    assert_eq!(result, Vec::<String>::new())", regions, regions, Vec<String>, unwrap_or(vec!["None".to_string()]));
+
+    Generate_Function!("Returns the genres of a game \n ## Returns: \n the genres of a game as a Vec<String>
+    \n If there is none listed defults to \\[\"None\"\\] or \\[\\] \n ## Example: \n
+    use speedrunapi::GameData;
+    let result: Vec<String> = GameData::new(\"Mc\").run().genres();
+    assert_eq!(result, [\"q4n60ln9\", \"jp230326\"])", genres, genres, Vec<String>, unwrap_or(vec!["None".to_string()]));
+
+    Generate_Function!("Returns the engines of a game \n ## Returns: \n the engines of a game as a Vec<String>
+    \n If there is none listed defults to \\[\"None\"\\] or \\[\\] \n ## Example: \n
+    use speedrunapi::GameData;
+    let result: Vec<String> = GameData::new(\"Mc\").run().engines();
+    assert_eq!(result, Vec::<String>::new())", engines, engines, Vec<String>, unwrap_or(vec!["None".to_string()]));
+
+    Generate_Function!("Returns the developers of a game \n ## Returns: \n the developers of a game as a Vec<String>
+    \n If there is none listed defults to \\[\"None\"\\] or \\[\\] \n ## Example: \n
+    use speedrunapi::GameData;
+    let result: Vec<String> = GameData::new(\"Mc\").run().developers();
+    assert_eq!(result, [\"k62d97ex\"])", developers, developers, Vec<String>, unwrap_or(vec!["None".to_string()]));
+
+    Generate_Function!("Returns the publishers of a game \n ## Returns: \n the publishers of a game as a Vec<String>
+    \n If there is none listed defults to \\[\"None\"\\] or \\[\\] \n ## Example: \n
+    use speedrunapi::GameData;
+    let result: Vec<String> = GameData::new(\"Mc\").run().publishers();
+    assert_eq!(result, Vec::<String>::new())", publishers, publishers, Vec<String>, unwrap_or(vec!["None".to_string()]));
+
+    /// Returns the moderators of a game
+    /// 
+    /// ## Returns:
+    /// 
+    /// The moderators and their positions of a game as a Vec<(String, String)>
+    /// 
+    /// ## Example:
+    /// ```rust
+    /// use speedrunapi::GameData;
+    /// let result = GameData::new("Mc").run().moderators();
+    /// println!("{:?}", result);
+    /// ```
     
-    Ok(game_data)
+    pub fn moderators(&self) -> Vec<(String, String)> {
+        //for translations
+        //use crate::user_data::UserData;
+        if let GameResult::Game(game_data) = self {
+            let mods = game_data.data.moderators.clone();
+            let ids: Vec<String> = mods.iter().map(|x| x.0.to_string()).collect();
+            let positions: Vec<String> = mods.iter().map(|x| x.1.to_string()).collect();
+            for pos in 1..positions.len(){
+                positions[pos].trim_matches(|c| c == '\\' || c == '"').to_string();
+            }
+            let merged_vec: Vec<(String, String)> = ids.iter().zip(positions.iter()).map(|(x, y)| (x.to_string(), y.to_string())).collect();
+            return merged_vec.to_vec();
+        }
+        else{
+            panic!("Cannot get moderators from: {:?}", self);
+        }
+    }
+    
+    /// Returns when the game was created on speedrun.com
+    /// 
+    /// ## Returns:
+    /// 
+    /// The date the game was created as a string
+    /// 
+    /// ## Example:
+    /// ```rust
+    /// use speedrunapi::GameData;
+    /// let result: String = GameData::new("Mc").run().created();
+    /// assert_eq!(result, "2015-01-29 23:41:21")
+    /// ```
+    
+    pub fn created(&self) -> String{
+        if let GameResult::Game(game_data) = self{
+            tl_time!(game_data.data.created)
+        }
+        else {
+            panic!("Cannot get creation date from: {:?}", self)
+        }
+    }
+    
+    /// Returns the games assets
+    /// 
+    /// ## Arguments:
+    /// 
+    /// `asset_type: &str`: The type of assets to return (NON CASE SENSITIVE)
+    /// asset_type can be: 
+    /// - logo
+    /// - cover_tiny
+    /// - cover_small
+    /// - cover_medium
+    /// - cover_large
+    /// - icon
+    /// - trophy_1st
+    /// - trophy_2nd
+    /// - trophy_3rd
+    /// - trophy_4th
+    /// - background
+    /// - foreground
+    /// 
+    /// ## Returns:
+    /// 
+    /// The link to the asset as a string
+    /// 
+    /// ## Example:
+    /// ```rust
+    /// use speedrunapi::GameData;
+    /// let result: String = GameData::new("Mc").run().assets("logo");
+    /// assert_eq!(result, "https://www.speedrun.com/themeasset/2wo6q4we/logo?v=413b0b3")
+    /// ```
+    /// 
+    /// ## Panics!
+    /// 
+    /// The function will panic if it recives an invalid asset type or no asset type at all!
+    
+    pub fn assets(&self, asset_type: &str) -> String{
+        if let GameResult::Game(game_data) = self {
+            match asset_type.to_lowercase().as_str(){
+                "logo" => game_data.data.assets.logo.uri.clone().unwrap_or(String::from("None")),
+                "cover_tiny" => game_data.data.assets.cover_tiny.uri.clone().unwrap_or(String::from("None")),
+                "cover_small" => game_data.data.assets.cover_small.uri.clone().unwrap_or(String::from("None")),
+                "cover_medium" => game_data.data.assets.cover_medium.uri.clone().unwrap_or(String::from("None")),
+                "cover_large" => game_data.data.assets.cover_large.uri.clone().unwrap_or(String::from("None")),
+                "icon" => game_data.data.assets.icon.uri.clone().unwrap_or(String::from("None")),
+                "trophy_1st" => game_data.data.assets.trophy_1st.uri.clone().unwrap_or(String::from("None")),
+                "trophy_2nd" => game_data.data.assets.trophy_2nd.uri.clone().unwrap_or(String::from("None")),
+                "trophy_3rd" => game_data.data.assets.trophy_3rd.uri.clone().unwrap_or(String::from("None")),
+                "trophy_4th" => game_data.data.assets.trophy_4th.iter().map(|link| link.uri.clone().unwrap_or(String::from("None"))).collect(),
+                "background" => game_data.data.assets.background.uri.clone().unwrap_or(String::from("None")),
+                "foreground" => game_data.data.assets.foreground.iter().map(|link| link.uri.clone().unwrap_or(String::from("None"))).collect(),
+                _ => panic!("Invalid asset type: {:?}", asset_type)
+            }
+       }
+        else{
+            panic!("Cannot get assets from: {:?}", self);
+        }
+    }
+
+    /// Returns the links of a game
+    /// 
+    /// ## Returns:
+    /// 
+    /// The links of a game as a Vec<(String, String)>
+    /// The format is (name, link)
+    /// 
+    /// ## Example:
+    /// ```rust
+    /// use speedrunapi::GameData;
+    /// let result: Vec<(String, String)> = GameData::new("Mc").run().links();
+    /// println!("{:?}", result);
+    /// ```
+
+    pub fn links(&self) -> Vec<(String, String)> {
+        if let GameResult::Game(game_data) = self {
+            let game = &game_data.data.links;
+            let names: Vec<&str> = game.iter().map(|link| link.rel.as_str()).collect();
+            let urls: Vec<&str> = game.iter().map(|link| link.uri.as_str()).collect();
+            let merged_vec: Vec<(String, String)> = names.iter().zip(urls.iter()).map(|(x, y)| (x.to_string(), y.to_string())).collect();
+            return merged_vec.to_vec();
+        }
+        else{
+            panic!("Cannot get links from: {:?}", self);
+        }
+    }
+
 }
 
-pub fn game_data(game: &str) -> Vec<String>{
-    main(game.to_string())
-}
+impl GameData{
+    
+    /// Creates a new GameData object
+    /// 
+    /// # Arguments:
+    /// 
+    /// `game: &str`: The name of the game
+    /// 
+    /// # Examples:
+    /// ```rust
+    /// use speedrunapi::GameData;
+    /// let result = GameData::new("Mc");
+    /// ```
+    /// This will create a new GameData object with the name "Mc" but when printed will only print out the parameters passed to it.
+    /// To show the date recieved you need to add .run()
+    /// ```rust
+    /// use speedrunapi::GameData;
+    /// let result = GameData::new("Mc").run();
+    /// println!("{:?}", result);
+    /// ```
 
-/// Returns the game id of a game
-/// 
-/// ## Returns
-/// 
-/// game_id: `String`, the id of the game
-/// 
-/// ## Examples
-/// ```rust
-/// use speedrunapi::game_id;
-/// let result = game_id("Mc");
-/// assert_eq!(result, "j1npme6p");
-/// ```
+    pub fn new(game: &str) -> GameData{
+        GameData{
+            name: game.to_string(),
+            categories: false,
+            levels: false,
+            variables: false,
+            derived_games: false,
+            records: false,
+        }
+    }
 
-pub fn game_id(game: &str) -> String{
-    let id = &main(game.to_string())[0];
-    return id.to_string();
-}
-
-#[doc(hidden)]
-/// ### NOTE!
-/// This is a value for the future to be used when support for game ids being queryed gets added!
-pub fn game_name(game: &str) -> String{
-    let name = &main(game.to_string())[1];
-    return name.to_string();
-}
-
-/// Returns the number of boosts a game has on speedrun.com
-/// 
-/// ## Returns
-/// 
-/// boosts: `i32`, the number of boosts a game has
-/// 
-/// ## Examples
-/// ```rust
-/// use speedrunapi::game_boosts;
-/// let result: i32 = game_boosts("Mc");
-/// assert_eq!(result, 0);
-/// ```
-
-pub fn game_boosts(game: &str) -> i32{
-    let boosts = &main(game.to_string())[4];
-    return boosts.parse::<i32>().unwrap();
-}
-
-/// Returns the abbreviation of a game
-/// 
-/// ## Returns
-/// 
-/// abbreviation: `String`, the abbreviation of the game
-/// 
-/// ## Examples
-/// ```rust
-/// use speedrunapi::game_abbreviation;
-/// let result = game_abbreviation("Mc");
-/// assert_eq!(result, "mc");
-/// ```
-
-pub fn game_abbreviation(game: &str) -> String{
-    let abbrev = &main(game.to_string())[6];
-    return abbrev.to_string();
-}
-
-/// Returns a games weblink
-/// 
-/// ## Returns
-/// 
-/// weblink: `String`, the weblink of the game 
-/// The weblink is the link you would put in a search bar to see the games home page
-/// 
-/// ## Examples
-/// ```rust
-/// use speedrunapi::game_weblink;
-/// let result = game_weblink("Mc");
-/// assert_eq!(result, "https://www.speedrun.com/mc");
-/// ```
-
-pub fn game_weblink(game: &str) -> String{
-    let weblink = &main(game.to_string())[7];
-    return weblink.to_string();
-}
-
-/// Returns the discord of a game
-/// 
-/// ## Returns
-/// 
-/// discord: `String`, the discord of the game
-/// 
-/// ## Examples
-/// ```rust
-/// use speedrunapi::game_discord;
-/// let result = game_discord("Mc");
-/// assert_eq!(result, "https://discord.gg/jmdFn3C");
-/// ```
-
-pub fn game_discord(game: &str) -> String{
-    let discord = &main(game.to_string())[8];
-    return discord.to_string();
-}
-
-/// Returns the release date of a game
-/// 
-/// ## Returns
-/// 
-/// release_date: `i32`, the release date of the game
-/// 
-/// ## Examples
-/// ```rust
-/// use speedrunapi::game_release_date;
-/// let result = game_release_date("Mc");
-/// assert_eq!(result, 2011);
-/// ```
-
-pub fn game_release_date(game: &str) -> i32{
-    let release_date = &main(game.to_string())[9];
-    return release_date.parse::<i32>().unwrap();
-}
-
-/// Returns the ruleset of a game
-/// 
-/// ## Returns
-/// 
-/// ruleset: `Vec<String>`, the ruleset of the game
-/// Each of the points in the ruleset can be indexed to get the value of the corresponding point
-/// The poins are in order:
-/// 
-/// [Show Milliseconds [True/Flase], Require Verification [True/False], 
-/// Require Video [True/False], Defult Time [String], Emulators Allowed [True/False], 
-/// Romhacks Allowed [True/False]]
-/// 
-/// **Notes:**
-/// 
-/// -The values that are true or flase can be parsed into a booleen
-/// 
-/// ## Examples
-/// ```rust
-/// use speedrunapi::game_ruleset;
-/// let result = game_ruleset("Mc");
-/// assert_eq!(result, ["true", "true", "true", "ingame", "false", "false"])
-/// ```
-/// This shows returning the whole array with all of the values
-/// 
-/// ```rust
-/// use speedrunapi::game_ruleset;
-/// let result = game_ruleset("Mc");
-/// assert_eq!(result[0].parse::<bool>().unwrap(), true)
-/// ```
-/// This shows indexing a value and parsing it to its booleen value (True)
-
-pub fn game_ruleset(game: &str) -> Vec<String>{
-    let ruleset = &main(game.to_string());
-    let rulesetpoints = vec![&ruleset[11], &ruleset[12], &ruleset[13], &ruleset[14], &ruleset[15], 
-    &ruleset[16]];
-    // You must collect the data points to change ownership and ensure order is correct
-    let strings: Vec<String> = rulesetpoints.iter().map(|s| s.to_string()).collect();
-    return strings.to_vec()
-}
-
-/// Returns the date where the game was added to speedrun.com
-/// 
-/// ## Returns 
-/// 
-/// creation_date: `String`, the date when the game was added to speedrun.com
-/// 
-/// **Notes**
-/// 
-/// - The date of the game has to be translated into a human readable date. 
-/// This translation (relying on an external crate) may be unoptimised and slow.
-/// 
-/// ## Examples
-/// ```rust
-/// use speedrunapi::game_creation;
-/// let result = game_creation("Mc");
-///  assert_eq!(result, "2015-01-29 23:41:21")
-/// ```
-
-pub fn game_creation(game: &str) -> String{
-    let creation = &main(game.to_string())[17];
-    let translated = tl_time(creation);
-    return translated
-}
-
-/// Returns the assets of a game
-/// 
-/// ## Returns
-/// 
-/// assets: `Vec<String>`, the assets of the game
-/// 
-/// Each of the assets can be indexed to get the value of the corresponding asset
-/// 
-/// The assets are in order:
-/// 
-/// [Cover Tiny [String], Cover Medium [String], Cover Large [String], Trophy 1st [String], 
-/// Trophy 2nd [String], Trophy 3rd [String], Trophy 4th [String], Background [String], Foreground [String]]
-/// 
-/// ## Examples
-/// ```rust
-/// use speedrunapi::game_assets;
-/// let result = game_assets("Mc");
-/// assert_eq!(result[0], "https://www.speedrun.com/themeasset/2wo6q4we/logo?v=413b0b3")
-/// ```
-
-pub fn game_assets(game: &str) -> Vec<String>{
-    let asset = &main(game.to_string());
-    let assets = vec![&asset[18], &asset[19], &asset[20], &asset[21], &asset[22], &asset[23], &asset[24], 
-    &asset[25], &asset[26], &asset[27], &asset[28]];
-    // You must collect the data points to change ownership and ensure order is correct
-    let strings: Vec<String> = assets.iter().map(|s| s.to_string()).collect();
-    return strings.to_vec()
-}
-
-// Add in links (may take a bit of work)
-
-fn main(game: String) -> Vec<String>{
-    game_reqwest(&game.to_string()).expect("An Unexpected error occured when fetching the game!")
+    /// Runs the request to the speedrun.com API
+    /// 
+    /// # Arguments:
+    /// 
+    /// This function requires that you have called the new function with the nessiasary parametrers first
+    /// 
+    /// # Returns:
+    /// 
+    /// The result of the request as a GameData object
+    /// 
+    /// If an error has occurred the program may return None or Error(ErrorType) as an OK
+    /// 
+    /// # Example:
+    /// ```rust
+    /// use speedrunapi::GameData;
+    /// let result = GameData::new("Mc").run();
+    /// println!("{:?}", result);
+    /// ```
+    
+    #[tokio::main]
+    pub async fn run(&self) -> GameResult{
+        let client = reqwest::Client::new();
+        let mut url = format!("https://www.speedrun.com/api/v1/games/{:1}", self.name);
+        if self.categories{
+            url.push_str("/categories");
+        }
+        if self.levels{
+            url.push_str("/levels");
+        }
+        if self.variables{
+            url.push_str("/variables");
+        }
+        if self.derived_games{
+            url.push_str("/derived-games");
+        }
+        if self.records{
+            url.push_str("/records");
+        }
+        else{
+            url.to_string();
+        }
+        let response = match client.get(url).send().await{
+            Ok(response) => response,
+            Err(err) => return GameResult::Error(GameError::ReqwestError(err.into())),
+        };
+        if response.status() == reqwest::StatusCode::NOT_FOUND{
+            return GameResult::Error(GameError::GameNotFound);
+        }
+        if self.categories{
+            // for now print later on deseralize
+            println!("test");
+            GameResult::None
+        }
+        else{
+            let response = match response.json::<Data>().await{
+                Ok(response) => response,
+                Err(err) => return GameResult::Error(GameError::ReqwestError(err.into())),
+            };
+            GameResult::Game(response)
+        }
+    }
 }

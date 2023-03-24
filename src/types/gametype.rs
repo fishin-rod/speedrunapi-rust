@@ -11,7 +11,7 @@ pub struct Link {
 pub struct GameType{
     pub(crate) id: String,
     pub(crate) name: String,
-    pub(crate) links: Vec<Link>,
+   // pub(crate) links: Vec<Link>,
 }
 
 #[derive(Deserialize, Debug)]

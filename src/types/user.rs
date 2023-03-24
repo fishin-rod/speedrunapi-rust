@@ -29,7 +29,6 @@ pub struct Names {
 }
 /* 
 #[derive(Deserialize, Debug)]
-
 pub struct NameStyle {
     pub(crate) style: String,
     pub(crate) color: Color,
@@ -80,7 +79,7 @@ pub struct Link {
 
 #[derive(Deserialize, Debug)]
 pub struct UserData {
-    pub(crate) data: Vec<User>
+    pub(crate) data: User
    // pub(crate) pagination: Pagination,
 }
 

@@ -16,3 +16,6 @@ pub use game::GameData;
 
 pub mod gametype;
 pub use gametype::GameTypeData;
+
+pub mod levels;
+pub use levels::LevelData;
